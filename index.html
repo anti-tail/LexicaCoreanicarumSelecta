@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中期朝鮮語を引く — Lexica Koreanicarum</title>
+<meta name="description" content="우리말샘（国立国語院）の歴史情報から，15–19 世紀の朝鮮語の形と用例を引く検索ページ．">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <div class="mark"><span class="mark-title">Lexica Koreanicarum</span><span class="mark-sub">中期・近世朝鮮語を引く</span></div>
+    <button type="button" class="link-btn" id="theme">暗い表示にする</button>
+  </div>
+  <div class="wrap">
+    <form id="f" class="query" autocomplete="off" role="search">
+      <input id="q" class="field big" type="search" placeholder="ᄆᆞᅀᆞᆷ　마음　mozom　こころ" aria-label="語を入れる" autofocus>
+      <button class="btn" type="submit">引く</button>
+    </form>
+    <div class="palette" aria-label="옛한글 の字母を入れる">
+      <span class="label">字母</span>
+      <button type="button" data-ins="ㆍ" title="아래아">ㆍ</button><button type="button" data-ins="ㅿ" title="반치음">ㅿ</button>
+      <button type="button" data-ins="ㆁ" title="옛이응">ㆁ</button><button type="button" data-ins="ㅸ" title="순경음 비읍">ㅸ</button>
+      <button type="button" data-ins="ㆆ" title="여린히읗">ㆆ</button><button type="button" data-ins="ㅴ" title="ㅂㅅㄱ">ㅴ</button>
+      <button type="button" data-ins="ㅵ" title="ㅂㅅㄷ">ㅵ</button><button type="button" data-ins="ㅳ" title="ㅂㄷ">ㅳ</button>
+      <button type="button" data-ins="ㅄ" title="ㅂㅅ">ㅄ</button><button type="button" data-ins="ㅺ" title="ㅅㄱ">ㅺ</button>
+      <button type="button" data-ins="ㅼ" title="ㅅㄷ">ㅼ</button><button type="button" data-ins="ㅽ" title="ㅅㅂ">ㅽ</button>
+      <button type="button" data-ins="ㆅ" title="쌍히읗">ㆅ</button><button type="button" data-ins="ㆎ" title="ㆍ+ㅣ">ㆎ</button>
+      <span class="hint">字母は「ㅁㆍㅿㆍㅁ」のように並べて入れれば音節にまとまります．傍点は無視して探します．</span>
+    </div>
+    <div class="stages" role="group" aria-label="時代で絞る">
+      <span class="label">時代</span>
+      <label><input type="checkbox" value="L" checked> 15・16 世紀</label>
+      <label><input type="checkbox" value="O" checked> 옛말（時期不明）</label>
+      <label><input type="checkbox" value="E" checked> 17–19 世紀</label>
+    </div>
+  </div>
+</header>
+<main class="wrap main">
+  <section class="pane list-pane" aria-label="結果"><div class="pane-head"><span id="info">読み込み中…</span></div><ul id="results" class="list"></ul></section>
+  <section class="pane detail-pane" aria-label="項目" id="detail">
+    <div class="empty">
+      <h2>使い方</h2>
+      <ul>
+        <li>옛한글 の形で引く：<a href="#q=ᄆᆞᅀᆞᆷ">ᄆᆞᅀᆞᆷ</a>，<a href="#q=ᄀᆞᅀᆞᆯ">ᄀᆞᅀᆞᆯ</a>，<a href="#q=더ᄫᅱ">더ᄫᅱ</a></li>
+        <li>現代語の見出しで引く：<a href="#q=가을">가을</a>，<a href="#q=마음">마음</a></li>
+        <li>Yale で引く：<a href="#q=mozom">mozom</a>，<a href="#q=kozol">kozol</a></li>
+        <li>日本語で引く：<a href="#q=こころ">こころ</a>，<a href="#q=秋">秋</a></li>
+      </ul>
+      <p class="muted">形・用例・出典は 우리말샘（国立国語院）の歴史情報，日本語訳は 한국어기초사전（国立国語院）の対訳です．どちらも CC BY-SA 2.0 KR．詳しくは <a href="LICENSE.md">LICENSE.md</a>．</p>
+    </div>
+  </section>
+</main>
+<footer class="wrap foot">
+  <span id="meta"></span>
+  <span>出典：<a href="https://opendict.korean.go.kr/" rel="noopener">우리말샘</a>・<a href="https://krdict.korean.go.kr/" rel="noopener">한국어기초사전</a>（国立国語院，CC BY-SA 2.0 KR）</span>
+</footer>
+<script src="site.js"></script>
+</body>
+</html>
