@@ -1,0 +1,4 @@
+hangul.woff は Noto Serif CJK KR（Adobe / Google，SIL Open Font License 1.1）の部分集合です．
+Copyright 2017–2024 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+License text: https://openfontlicense.org/open-font-license-official-text/

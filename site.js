@@ -14,14 +14,20 @@
     'ㅿ': 0x11EB, 'ㆁ': 0x11F0, 'ㅸ': 0x11E6, 'ㆆ': 0x11F9 };
   const VOW = { 'ㆍ': 0x119E, 'ㆎ': 0x11A1 };
   'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ'.split('').forEach((c, i) => { VOW[c] = 0x1161 + i; });
+  const J2C = {}; Object.keys(JONG).forEach(k => { if (CHO[k] !== undefined) J2C[String.fromCharCode(JONG[k])] = CHO[k]; });
   const isVowel = ch => ch && (VOW[ch] !== undefined || (ch >= 'ᅠ' && ch <= 'ᆧ') || (ch >= 'ힰ' && ch <= 'ퟆ'));
   const isLeadOrVowelEnd = ch => ch && ((ch >= 'ᅠ' && ch <= 'ᇿ') || (ch >= 'ힰ' && ch <= '퟿') || VOW[ch] !== undefined);
-  function normalize(s) {
-    const a = [...(s || '').normalize('NFD').replace(/[〮〯·]/g, '').replace(/\s+/g, '')];
+  function normalize(s) { return compose((s || '').replace(/[\u302E\u302F\u00B7]/g, '').replace(/\s+/g, '')); }
+  function compose(s) {
+    const a = [...(s || '').normalize('NFD')];
     let out = '';
     for (let i = 0; i < a.length; i++) {
       const ch = a[i], next = a[i + 1], prev = out.slice(-1);
-      if (VOW[ch] !== undefined) out += String.fromCharCode(VOW[ch]);
+      if (VOW[ch] !== undefined || (ch >= '\u1160' && ch <= '\u11A7')) {
+        // 母音の前の終声は次の音節の初声に移す（ᄆᆞᇫ + ㆍ → ᄆᆞᅀᆞ）
+        if (J2C[prev] !== undefined) out = out.slice(0, -1) + String.fromCharCode(J2C[prev]);
+        out += VOW[ch] !== undefined ? String.fromCharCode(VOW[ch]) : ch;
+      }
       else if (CHO[ch] !== undefined || JONG[ch] !== undefined) {
         if (isVowel(next) && CHO[ch] !== undefined) out += String.fromCharCode(CHO[ch]);
         else if (isLeadOrVowelEnd(prev) && JONG[ch] !== undefined) out += String.fromCharCode(JONG[ch]);
@@ -101,6 +107,104 @@
     $('#detail').scrollTop = 0;
   }
 
+
+  // ---------- 訳：ページ上の語を選ぶと「訳」ボタン．中期・近世の形としての項目と，現代語としての日本語訳（한국어기초사전）を引く
+  const SB = 0xAC00, JONGS = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+  const split = ch => { const o = ch.codePointAt(0) - SB; return o >= 0 && o < 11172 ? [Math.floor(o / 588), Math.floor((o % 588) / 28), o % 28] : null; };
+  const join = (l, v, t) => String.fromCharCode(SB + (l * 21 + v) * 28 + t);
+  const withJong = (ch, j) => { const p = split(ch); return p ? join(p[0], p[1], JONGS.indexOf(j)) : ch; };
+  const PART = ' 이라는 이라고 이라도 이라면 에서는 에게서 으로서 으로써 으로는 에서도 에게는 까지는 부터는 처럼 보다 에서 에게 한테 께서 으로 까지 부터 마저 조차 이나 이며 이고 이랑 하고 이 가 은 는 을 를 의 에 와 과 도 만 로 나 며 고 랑 께 서'.trim().split(' ').sort((a, b) => b.length - a.length);
+  const ENDS = '었었다 았었다 겠다 었다 았다 였다 습니다 는다 어서 아서 여서 으면 으며 으니 으나 으려 거나 지만 도록 는데 은데 던 고 며 면 니 게 지 기 음 은 는 을 어 아 여 다'.split(' ').sort((a, b) => b.length - a.length);
+  function sylRules(x) {
+    const p = x ? split(x.slice(-1)) : null; if (!p) return [];
+    const [l, v, t] = p, base = join(l, v, 0), jong = JONGS[t], out = [], pre = x.slice(0, -1);
+    if (['ㄴ', 'ㄹ', 'ㅁ', 'ㅂ'].includes(jong)) out.push(pre + base, pre + withJong(base, 'ㄹ'));
+    if (jong === 'ㅆ') out.push(pre + base);
+    if (base === '해' && (jong === '' || jong === 'ㅆ')) out.push(pre + '하');
+    if (base === '하' && jong === 'ㄴ') out.push(pre + '하');
+    if ((base === '워' || base === '우') && x.length > 1 && ['', 'ㄴ', 'ㄹ', 'ㅁ'].includes(jong)) out.push(x.slice(0, -2) + withJong(x.slice(-2, -1), 'ㅂ'));
+    if (base === '와' && x.length > 1) out.push(pre + '오');
+    return out;
+  }
+  function candidates(text) {
+    const m = (text || '').normalize('NFC').match(/[가-힣]+/g); if (!m) return [];
+    const w = m.sort((a, b) => b.length - a.length)[0];
+    let out = [w];
+    const nouns = PART.filter(p => w.endsWith(p) && w.length > p.length).map(p => w.slice(0, -p.length));
+    ['이었다', '이다', '인', '임', '이며', '이고', '이나', '이어서', '였다', '이므로'].forEach(c => { if (w.endsWith(c) && w.length > c.length) nouns.push(w.slice(0, -c.length)); });
+    let stems = ENDS.filter(e => w.endsWith(e) && w.length > e.length).map(e => w.slice(0, -e.length));
+    [w, ...stems].forEach(x => { stems = stems.concat(sylRules(x)); });
+    out = [w, ...stems.map(x => x + '다'), ...nouns, ...stems];
+    return [...new Set(out.filter(Boolean))].slice(0, 24);
+  }
+  const JA = {};
+  const jaShard = n => (JA[n] ??= fetch(`data/ja/${String(n).padStart(2, '0')}.json`).then(r => r.json()).catch(() => ({})));
+  async function jaLookup(cands) {
+    const shards = [...new Set(cands.map(c => c.codePointAt(0) % (META.ja_shards || 32)))];
+    const loaded = await Promise.all(shards.map(jaShard));
+    const dict = Object.assign({}, ...loaded), hits = [];
+    cands.forEach(c => (dict[c] || []).forEach(x => hits.push([c, ...x])));
+    return hits.slice(0, 12);
+  }
+  const SYL = /[가-힣][ᆨ-ᇿퟋ-ퟻ]*|[ᄀ-ᅟꥠ-ꥼ]+[ᅠ-ᆧힰ-ퟆ]+[ᆨ-ᇿퟋ-ퟻ]*/g;
+  function oldForms(word) {
+    // 用例の語は助詞・語尾が付いていることがあるので，後ろの音節を 1 つずつ外しながら形を探す
+    const syl = (word.replace(/[〮〯]/g, '').normalize('NFC').match(SYL) || []);
+    for (let n = syl.length; n >= Math.min(2, syl.length); n--) {
+      const q = syl.slice(0, n).join('').normalize('NFD');
+      const rows = INDEX.filter(r => r[4].split('|').includes(q));
+      if (rows.length) return { form: syl.slice(0, n).join(''), rows: rows.slice(0, 6) };
+    }
+    return { form: '', rows: [] };
+  }
+  let tbtn = null, tpop = null;
+  const dropBtn = () => { tbtn?.remove(); tbtn = null; }, dropPop = () => { tpop?.remove(); tpop = null; };
+  document.addEventListener('pointerup', e => {
+    if (e.target.closest?.('.tr-pop, .tr-btn, input, button, .palette')) return;
+    setTimeout(() => {
+      const sel = getSelection(), t = sel ? sel.toString().trim() : '';
+      dropBtn();
+      if (!t || t.length > 30 || !/[ᄀ-ᇿ가-힣ꥠ-꥿ힰ-퟿]/.test(t) || !sel.rangeCount) return;
+      const r = sel.getRangeAt(0).getBoundingClientRect();
+      tbtn = Object.assign(document.createElement('button'), { type: 'button', className: 'tr-btn', textContent: '訳' });
+      tbtn.style.left = Math.min(scrollX + r.right + 6, scrollX + innerWidth - 60) + 'px';
+      tbtn.style.top = (scrollY + r.top - 4) + 'px';
+      tbtn.addEventListener('mousedown', ev => ev.preventDefault());
+      tbtn.addEventListener('click', () => { const at = { x: scrollX + r.left, y: scrollY + r.bottom + 8 }; dropBtn(); openPop(t, at); });
+      document.body.appendChild(tbtn);
+    }, 0);
+  });
+  document.addEventListener('mousedown', e => { if (tpop && !e.target.closest?.('.tr-pop')) dropPop(); if (tbtn && !e.target.closest?.('.tr-btn')) dropBtn(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { dropBtn(); dropPop(); } });
+  function openPop(word, at) {
+    dropPop();
+    tpop = document.createElement('div'); tpop.className = 'tr-pop'; tpop.setAttribute('role', 'dialog'); tpop.setAttribute('aria-label', '日本語訳');
+    tpop.style.left = Math.max(scrollX + 8, Math.min(at.x, scrollX + innerWidth - 432)) + 'px'; tpop.style.top = at.y + 'px';
+    tpop.innerHTML = `<form class="tr-head"><input value="${esc(word)}" aria-label="引く語"><button type="submit">引く</button></form><div class="tr-body"></div><div class="tr-foot"></div>`;
+    document.body.appendChild(tpop);
+    const inp = tpop.querySelector('input');
+    tpop.querySelector('form').addEventListener('submit', e => { e.preventDefault(); runTr(compose(inp.value).normalize('NFC')); });
+    runTr(word);
+  }
+  async function runTr(word) {
+    const body = tpop.querySelector('.tr-body'), foot = tpop.querySelector('.tr-foot');
+    body.innerHTML = '<div class="loading">引いています…</div>';
+    const old = oldForms(word), cands = candidates(word), ja = cands.length ? await jaLookup(cands) : [];
+    let h = '';
+    if (old.rows.length) {
+      h += `<div class="tr-sec">中期・近世の形 <span class="hangul">${esc(old.form)}</span> として</div>` + old.rows.map(r =>
+        `<div class="tr-hit"><a href="#" class="tr-hw" data-open="${r[0]}">${esc(r[1])}</a>${r[2] ? `<span class="faint">「${r[2]}」</span>` : ''}${r[3] ? `<div class="tr-ja">${esc(r[3])}</div>` : ''}<div class="tr-ko">${esc(r[7] || '')}</div></div>`).join('');
+    }
+    if (ja.length) {
+      h += `<div class="tr-sec">現代語として（한국어기초사전）</div>` + ja.map(([hw, pos, sn, jl, jd, ko]) =>
+        `<div class="tr-hit"><span class="tr-hw">${esc(hw)}</span> <span class="tag">${esc(pos || '')}</span>${sn ? `<span class="faint">「${sn}」</span>` : ''}<div class="tr-ja">${esc(jl)}</div>${jd ? `<div class="tr-def">${esc(jd)}</div>` : ''}<div class="tr-ko">${esc(ko || '')}</div></div>`).join('');
+    }
+    body.innerHTML = h || `<div class="tr-hit tr-def">見つかりませんでした．語尾を外した形に直して「引く」を押してください．</div>`;
+    const key = old.form || cands[0] || word;
+    foot.innerHTML = `<a href="#q=${encodeURIComponent(key)}">この語で検索</a><a href="https://ja.dict.naver.com/#/search?query=${encodeURIComponent(cands[0] || word)}" target="_blank" rel="noopener">NAVER 韓日辞典で開く</a>`;
+    body.querySelectorAll('[data-open]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); dropPop(); open(+a.dataset.open); }));
+  }
+
   // ---------- 状態（URL の # に検索語と項目を残す）
   function setHash() {
     const p = new URLSearchParams();
@@ -118,11 +222,22 @@
   window.addEventListener('hashchange', () => { if (!location.hash.includes('id=') || !current) fromHash(); });
   $('#f').addEventListener('submit', e => { e.preventDefault(); current = null; search($('#q').value); setHash(); });
   $$('.stages input').forEach(i => i.addEventListener('change', () => search($('#q').value)));
-  $$('.palette button').forEach(b => b.addEventListener('click', () => {
-    const q = $('#q'), s = q.selectionStart ?? q.value.length;
-    q.value = q.value.slice(0, s) + b.dataset.ins + q.value.slice(q.selectionEnd ?? s);
-    q.focus(); q.setSelectionRange(s + 1, s + 1);
-  }));
+  // 字母のボタン：入力欄のカーソル位置を覚えておき，そこに入れてから音節にまとめる
+  const qi = $('#q');
+  let caret = null;
+  const remember = () => { caret = [qi.selectionStart, qi.selectionEnd]; };
+  ['keyup', 'click', 'select', 'input', 'compositionend', 'blur'].forEach(ev => qi.addEventListener(ev, remember));
+  function insertJamo(ch) {
+    const v = qi.value, [a, b] = caret || [v.length, v.length];
+    const head = compose(v.slice(0, a) + ch).normalize('NFC'), tail = v.slice(b);
+    qi.value = head + tail;
+    caret = [head.length, head.length];
+    qi.focus({ preventScroll: true });
+    qi.setSelectionRange(head.length, head.length);
+  }
+  $$('.palette button').forEach(b => b.addEventListener('click', () => insertJamo(b.dataset.ins)));
+  qi.addEventListener('blur', () => { const v = compose(qi.value).normalize('NFC'); if (v !== qi.value) qi.value = v; });
+
   // 表示
   try { const t = localStorage.getItem('lexica.theme'); if (t) document.documentElement.dataset.theme = t; } catch (_) { /* なし */ }
   const isDark = () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);

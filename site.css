@@ -1,10 +1,15 @@
-/* Lexica Koreanicarum — 中期朝鮮語検索（静的サイト）．本体 UI と同じ色と書体 */
+/* Lexica Koreanicarum Selecta — 中期朝鮮語検索（静的サイト）．本体 UI と同じ色と書体 */
+/* 옛한글 を合成表示できる書体（Noto Serif CJK KR の部分集合）．ハングルの範囲だけに使う */
+@font-face {
+  font-family: "LKS Hangul"; src: url("fonts/hangul.woff") format("woff"); font-display: swap;
+  unicode-range: U+1100-11FF, U+302E-302F, U+3130-318F, U+A960-A97F, U+AC00-D7A3, U+D7B0-D7FF, U+25CC;
+}
 :root {
   --paper: #EEF1EE; --surface: #FFFFFF; --surface-2: #F6F8F6; --ink: #1C2530; --muted: #5B6873; --faint: #8A959E;
   --rule: #D5DCD7; --rule-strong: #B9C3BD; --indigo: #2B4C8C; --indigo-soft: #E3E9F5; --celadon: #4F806B; --celadon-soft: #DDEBE3;
   --ochre: #F0DC95; --ochre-ink: #6E5612; --plum: #5A3E8E; --plum-soft: #F1EDF8;
   --font-ui: "IBM Plex Sans JP", "Yu Gothic UI", "Hiragino Sans", "Noto Sans CJK JP", "Noto Sans JP", system-ui, sans-serif;
-  --font-hangul: "Noto Serif CJK KR", "Source Han Serif K", "Noto Serif KR", "HCR Batang", "함초롬바탕", "Noto Sans CJK KR", "Malgun Gothic", serif;
+  --font-hangul: "LKS Hangul", "Noto Serif CJK KR", "Source Han Serif K", "Noto Serif KR", "HCR Batang", "함초롬바탕", "Noto Sans CJK KR", "Malgun Gothic", serif;
   --font-ipa: "Charis SIL", "Gentium Plus", "Doulos SIL", "Noto Serif", "Times New Roman", serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
@@ -29,11 +34,12 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .top-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
 .mark { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .mark-title { font-family: var(--font-ipa); font-style: italic; font-size: 22px; }
+.mark-selecta { font-size: .62em; letter-spacing: .02em; color: var(--muted); }
 .mark-sub { color: var(--muted); }
-.link-btn { background: none; border: 1px solid var(--rule); border-radius: 4px; color: var(--muted); padding: 2px 8px; cursor: pointer; font: inherit; font-size: 12px; }
+.link-btn { white-space: nowrap; flex: none; background: none; border: 1px solid var(--rule); border-radius: 4px; color: var(--muted); padding: 2px 8px; cursor: pointer; font: inherit; font-size: 12px; }
 .query { display: flex; gap: 8px; }
 .field { height: 44px; padding: 0 12px; border: 1px solid var(--rule-strong); border-radius: 4px; background: var(--surface); color: var(--ink); font: inherit; }
-.field.big { flex: 1; font-size: 19px; font-family: var(--font-hangul), var(--font-ui); }
+.field.big { flex: 1; min-width: 0; font-size: 19px; font-family: "LKS Hangul", var(--font-ui); }
 .field:focus { border-color: var(--indigo); outline: none; box-shadow: 0 0 0 3px var(--indigo-soft); }
 .btn { height: 44px; padding: 0 20px; border: 0; border-radius: 4px; background: var(--indigo); color: var(--surface); font: inherit; font-weight: 600; cursor: pointer; }
 .palette, .stages { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-top: 8px; font-size: 13px; }
@@ -86,3 +92,19 @@ mark { background: var(--ochre); color: var(--ochre-ink); padding: 0 2px; border
   .top { position: static; }
   .palette .hint { display: none; }
 }
+
+/* 訳（選んだ語の日本語訳） */
+.tr-btn { position: absolute; z-index: 20; height: 28px; padding: 0 12px; border-radius: 14px; border: 0; background: var(--indigo); color: var(--surface); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px -4px rgba(0,0,0,.3); }
+.tr-pop { position: absolute; z-index: 21; width: min(420px, calc(100vw - 24px)); max-height: 60vh; overflow: auto; background: var(--surface); border: 1px solid var(--rule-strong); border-radius: 8px; box-shadow: 0 12px 32px -12px rgba(28,37,48,.35); }
+.tr-head { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--surface); }
+.tr-head input { flex: 1; min-width: 0; height: 34px; padding: 0 8px; border: 1px solid var(--rule-strong); border-radius: 4px; font: inherit; font-family: var(--font-hangul); font-size: 16px; background: var(--surface); color: var(--ink); }
+.tr-head button { height: 34px; padding: 0 12px; border: 0; border-radius: 4px; background: var(--indigo); color: var(--surface); font: inherit; cursor: pointer; }
+.tr-sec { padding: 6px 12px 0; font-size: 12px; color: var(--faint); }
+.tr-hit { padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+.tr-hit:last-child { border-bottom: 0; }
+.tr-hw { font-family: var(--font-hangul); font-size: 17px; }
+.tr-ja { font-weight: 600; }
+.tr-def { font-size: 12.5px; color: var(--muted); }
+.tr-ko { font-size: 12px; color: var(--faint); }
+.tr-foot { padding: 8px 12px; font-size: 12px; border-top: 1px solid var(--rule); display: flex; gap: 12px; flex-wrap: wrap; }
+.loading { padding: 12px; color: var(--muted); }
