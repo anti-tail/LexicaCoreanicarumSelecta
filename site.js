@@ -143,6 +143,7 @@
     $$('#results .item').forEach(li => li.setAttribute('aria-selected', +li.dataset.id === id));
     if (!keepHash) setHash();
     const e = (await shard(id % (META.shards || 64)))[id];
+    if (e && e.d && !MAP) await loadMap();
     if (!e || current !== id) return;
     const order = Object.keys(VNAME);
     const forms = e.f.slice().sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]) || (a[5] || 0) - (b[5] || 0));
@@ -152,13 +153,76 @@
       ${e.gl ? `<div class="entry-gl">${esc(e.gl)}</div>` : ''}`;
     if (forms.length) h += `<h3>時代ごとの形<span class="n">${forms.length}</span></h3><table><thead><tr><th>時代</th><th>形</th><th>Yale（参考）</th><th>声調</th></tr></thead><tbody>` +
       forms.map(f => `<tr${hitForm(f) ? ' class="hit"' : ''}><td>${vtag(f[0])}</td><td class="hangul">${esc(f[1])}</td><td class="ipa">${esc(f[2])}</td><td class="faint">${esc(f[4])}</td></tr>`).join('') + '</tbody></table>';
+    if (e.d && e.d.length && MAP) h += dialectMap(e.d);
     if (e.c.length) h += `<h3>用例<span class="n">${e.c.length}</span></h3><table><thead><tr><th>時代</th><th>年</th><th>出典</th><th>用例</th></tr></thead><tbody>` +
       e.c.map(c => `<tr><td>${vtag(c[0])}</td><td class="num">${esc(c[2] ?? '')}</td><td class="num">${esc(c[3])}</td><td class="ctx">${ctx(c[4]) || `<span class="hangul">${esc(c[1])}</span>`}</td></tr>`).join('') + '</tbody></table>';
     h += `<p class="faint" style="font-size:12px;margin-top:18px">出典：우리말샘（国立国語院）の歴史情報${e.ja.length ? '，日本語訳は 한국어기초사전' : ''}．CC BY-SA 2.0 KR．<a href="https://opendict.korean.go.kr/search/searchResult?query=${encodeURIComponent(e.hw)}" rel="noopener" target="_blank">우리말샘 で開く</a></p></div>`;
     $('#detail').innerHTML = h;
     $('#detail').scrollTop = 0;
+    $$('#detail .dleg li').forEach(li => { li.onclick = () => focusGroup(li); li.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusGroup(li); } }; });
   }
 
+
+  // ---------- 方言地図：우리말샘 の方言形（項目と意味の錨が同じ方言項目の形）を，地域ごとに記号で示す小さな SVG 地図
+  let MAP = null;
+  const loadMap = () => (MAP ? Promise.resolve(MAP) : fetch('data/map.json').then(r => r.json()).then(m => (MAP = m)).catch(() => null));
+  const PAL = ['#2B4C8C', '#B2452F', '#3F7A63', '#B8862B', '#7A4A8C', '#2F7F8F', '#8A5A3B', '#B4577A'];
+  const SHAPES = ['circle', 'square', 'triangle', 'diamond', 'tri-down', 'hexagon', 'star', 'cross'];
+  const TOP = 8;
+  function mark(i, x, y, size) {
+    // 形 i の記号（中心 x, y）．TOP 以降は灰色の小さな点
+    if (i >= TOP) return `<circle cx="${x}" cy="${y}" r="2.6" class="dm-other"/>`;
+    const h = size / 2, c = PAL[i], f = (a, b) => `${(x - h + a).toFixed(1)},${(y - h + b).toFixed(1)}`;
+    const P = {
+      circle: `<circle cx="${x}" cy="${y}" r="${h - 1}"/>`,
+      square: `<rect x="${x - h + 1.5}" y="${y - h + 1.5}" width="${size - 3}" height="${size - 3}"/>`,
+      triangle: `<polygon points="${f(h, 0.5)} ${f(size - 0.5, size - 1)} ${f(0.5, size - 1)}"/>`,
+      'tri-down': `<polygon points="${f(0.5, 1)} ${f(size - 0.5, 1)} ${f(h, size - 0.5)}"/>`,
+      diamond: `<polygon points="${f(h, 0)} ${f(size, h)} ${f(h, size)} ${f(0, h)}"/>`,
+      hexagon: `<polygon points="${[0, 1, 2, 3, 4, 5].map(k => f(h + (h - 0.8) * Math.cos(Math.PI / 3 * k), h + (h - 0.8) * Math.sin(Math.PI / 3 * k))).join(' ')}"/>`,
+      star: `<polygon points="${[...Array(10)].map((_, k) => { const r = k % 2 ? h * 0.45 : h; const a = Math.PI / 5 * k - Math.PI / 2; return f(h + r * Math.cos(a), h + r * Math.sin(a)); }).join(' ')}"/>`,
+      cross: `<path d="M${f(h - 2, 0)}h4v${h - 2}h${h - 2}v4h-${h - 2}v${h - 2}h-4v-${h - 2}h-${h - 2}v-4h${h - 2}z"/>`,
+    };
+    return `<g fill="${c}" stroke="var(--surface)" stroke-width="1">${P[SHAPES[i]]}</g>`;
+  }
+  const legendMark = i => `<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">${mark(i, 7, 7, 13)}</svg>`;
+  function dialectMap(d) {
+    const R = MAP.regions, rname = c => (R[c] ? R[c][0] : c);
+    const byForm = new Map();
+    d.forEach(([code, form]) => { const k = form.normalize('NFC'); if (!byForm.has(k)) byForm.set(k, []); byForm.get(k).push(code); });
+    const ord = Object.keys(R), byOrd = (a, b) => (ord.indexOf(a) + 1 || 99) - (ord.indexOf(b) + 1 || 99);
+    byForm.forEach(v => v.sort(byOrd));
+    const groups = [...byForm.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+    // 地域 → その地域に出る形（番号）
+    const at = {};
+    groups.forEach(([, codes], gi) => codes.forEach(c => (at[c] ??= []).push(gi)));
+    const lit = new Set();
+    Object.keys(at).forEach(c => { lit.add(c); Object.entries(R).forEach(([k, r]) => { if (r[1] === c) lit.add(k); }); });
+    let svg = `<svg class="dmap-svg" viewBox="0 0 ${MAP.w} ${MAP.h}" role="img" aria-label="方言形の分布">
+      <rect width="${MAP.w}" height="${MAP.h}" class="dm-sea"/>`;
+    MAP.shapes.forEach(([kind, code, path]) => { svg += `<path d="${path}" class="${kind === 'land' ? 'dm-land' : lit.has(code) ? 'dm-prov dm-lit' : 'dm-prov'}"/>`; });
+    const outside = [];
+    Object.entries(at).forEach(([code, gis]) => {
+      const r = R[code];
+      if (!r || r[2] == null) { outside.push(code); return; }
+      const n = gis.length, cols = Math.min(n, 4), step = 11;
+      gis.forEach((gi, k) => {
+        const row = Math.floor(k / cols), col = k % cols, inRow = Math.min(cols, n - row * cols);
+        const x = r[2] + (col - (inRow - 1) / 2) * step, y = r[3] + (row - (Math.ceil(n / cols) - 1) / 2) * step;
+        svg += `<g class="dm-mark" data-g="${gi}"><title>${esc(groups[gi][0])}　${esc(rname(code))}</title>${mark(gi, +x.toFixed(1), +y.toFixed(1), 11)}</g>`;
+      });
+    });
+    svg += '</svg>';
+    const leg = groups.map(([form, codes], gi) => `<li data-g="${gi}" tabindex="0"><span class="dl-sym">${gi < TOP ? legendMark(gi) : '<svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="2.6" class="dm-other"/></svg>'}</span><span class="hangul dl-form">${esc(form)}</span><span class="dl-reg">${codes.map(c => esc(rname(c).replace(/ 방언$/, ''))).join('，')}${codes.some(c => outside.includes(c)) ? '<span class="faint">（地図の外）</span>' : ''}</span></li>`).join('');
+    return `<h3>方言形<span class="n">${groups.length} 形・${Object.keys(at).length} 地域</span></h3>
+      <div class="dmap">${svg}<ul class="dleg">${leg}</ul></div>
+      <p class="faint dmap-note">우리말샘 で同じ現代語に結ばれた方言項目の形．地域は 우리말샘 の地域区分（道単位）で，点はその代表地点．凡例を選ぶとその形だけを強調します．地図：Natural Earth を簡略化．</p>`;
+  }
+  function focusGroup(li) {
+    const box = li.closest('.dmap'), g = li.dataset.g, on = li.getAttribute('aria-pressed') !== 'true';
+    box.querySelectorAll('.dleg li').forEach(x => x.setAttribute('aria-pressed', on && x === li ? 'true' : 'false'));
+    box.querySelectorAll('.dm-mark').forEach(m => m.classList.toggle('dim', on && m.dataset.g !== g));
+  }
 
   // ---------- 訳：ページ上の語を選ぶと「訳」ボタン．中期・近世の形としての項目と，現代語としての日本語訳（한국어기초사전）を引く
   const SB = 0xAC00, JONGS = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];

@@ -113,3 +113,22 @@ mark { background: var(--ochre); color: var(--ochre-ink); padding: 0 2px; border
 .tr-ko { font-size: 12px; color: var(--faint); }
 .tr-foot { padding: 8px 12px; font-size: 12px; border-top: 1px solid var(--rule); display: flex; gap: 12px; flex-wrap: wrap; }
 .loading { padding: 12px; color: var(--muted); }
+
+/* 方言地図 */
+.dmap { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.dmap-svg { width: 260px; max-width: 100%; height: auto; flex: none; border: 1px solid var(--rule); border-radius: 6px; }
+.dm-sea { fill: var(--surface-2); }
+.dm-land { fill: var(--rule); stroke: var(--surface-2); stroke-width: .6; }
+.dm-prov { fill: var(--surface); stroke: var(--rule-strong); stroke-width: .6; }
+.dm-lit { fill: var(--indigo-soft); }
+.dm-other { fill: var(--faint); stroke: var(--surface); stroke-width: .8; }
+.dm-mark { transition: opacity .15s; }
+.dm-mark.dim { opacity: .12; }
+.dleg { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 200px; max-height: 480px; overflow: auto; font-size: 13px; }
+.dleg li { display: grid; grid-template-columns: 18px auto 1fr; gap: 2px 8px; align-items: baseline; padding: 4px 6px; border-radius: 4px; cursor: pointer; }
+.dleg li:hover { background: var(--surface-2); }
+.dleg li[aria-pressed="true"] { background: var(--indigo-soft); }
+.dl-sym { align-self: center; display: flex; }
+.dl-form { font-size: 16px; }
+.dl-reg { color: var(--muted); font-size: 12px; }
+.dmap-note { font-size: 12px; margin: 6px 0 0; }
