@@ -31,13 +31,22 @@
       <button type="button" data-ins="ㅄ" title="ㅂㅅ">ㅄ</button><button type="button" data-ins="ㅺ" title="ㅅㄱ">ㅺ</button>
       <button type="button" data-ins="ㅼ" title="ㅅㄷ">ㅼ</button><button type="button" data-ins="ㅽ" title="ㅅㅂ">ㅽ</button>
       <button type="button" data-ins="ㆅ" title="쌍히읗">ㆅ</button><button type="button" data-ins="ㆎ" title="ㆍ+ㅣ">ㆎ</button>
-      <span class="hint">ㅁ ㆍ ㅿ ㆍ ㅁ と順に入れると ᄆᆞᅀᆞᆷ にまとまります．傍点は無視して探します．</span>
+      <span class="hint">ㅁ ㆍ ㅿ ㆍ ㅁ と順に入れると <span class="hangul">ᄆᆞᅀᆞᆷ</span> にまとまります．傍点は無視して探します．</span>
     </div>
     <div class="stages" role="group" aria-label="時代で絞る">
       <span class="label">時代</span>
-      <label><input type="checkbox" value="L" checked> 15・16 世紀</label>
-      <label><input type="checkbox" value="O" checked> 옛말（時期不明）</label>
-      <label><input type="checkbox" value="E" checked> 17–19 世紀</label>
+      <label><input type="checkbox" value="0" checked> 15 世紀</label>
+      <label><input type="checkbox" value="1" checked> 16 世紀</label>
+      <label><input type="checkbox" value="3" checked> 17 世紀</label>
+      <label><input type="checkbox" value="4" checked> 18 世紀</label>
+      <label><input type="checkbox" value="5" checked> 19 世紀</label>
+      <label><input type="checkbox" value="2" checked> 옛말（時期不明）</label>
+      <span class="label sep">照合</span>
+      <select id="mode" class="mode" aria-label="照合のしかた">
+        <option value="era" selected>時代ごとの綴りの揺れを吸収</option>
+        <option value="syl">音節の組み方だけ吸収</option>
+        <option value="exact">表記どおり</option>
+      </select>
     </div>
   </div>
 </header>
@@ -47,13 +56,15 @@
     <div class="empty">
       <h2>使い方</h2>
       <ul>
-        <li>옛한글 の形で引く：<a href="#q=ᄆᆞᅀᆞᆷ">ᄆᆞᅀᆞᆷ</a>，<a href="#q=ᄀᆞᅀᆞᆯ">ᄀᆞᅀᆞᆯ</a>，<a href="#q=더ᄫᅱ">더ᄫᅱ</a></li>
-        <li>現代語の見出しで引く：<a href="#q=가을">가을</a>，<a href="#q=마음">마음</a></li>
+        <li>옛한글 の形で引く：<a class="hangul" href="#q=ᄆᆞᅀᆞᆷ">ᄆᆞᅀᆞᆷ</a>，<a class="hangul" href="#q=ᄀᆞᅀᆞᆯ">ᄀᆞᅀᆞᆯ</a>，<a class="hangul" href="#q=ᄒᆞᆰ">ᄒᆞᆰ</a></li>
+        <li>音節の組み方は問わない：<a class="hangul" href="#q=사ᄅᆞᆷ">사ᄅᆞᆷ</a> で <span class="hangul">사ᄅᆞᄆᆞᆯ・사ᄅᆞᆷᄆᆞᆯ</span> も，<a class="hangul" href="#q=놀애">놀애</a> で <span class="hangul">노래</span> も</li>
+        <li>現代語の見出しで引く：<a class="hangul" href="#q=가을">가을</a>，<a class="hangul" href="#q=마음">마음</a></li>
         <li>Yale で引く：<a href="#q=mozom">mozom</a>，<a href="#q=kozol">kozol</a></li>
         <li>日本語で引く：<a href="#q=こころ">こころ</a>，<a href="#q=秋">秋</a></li>
       </ul>
+      <p class="muted">「照合」が「時代ごとの綴りの揺れを吸収」のときは，形の属する世紀ですでに区別されなくなった字母や綴りを同じものとみなします．たとえば 17 世紀以降の形では ㅿ を無視し，ㅴ・ㅺ・ㄲ を区別せず，18 世紀以降の形では第 1 音節の ㆍ と ㅏ，<span class="hangul">디</span> と <span class="hangul">지</span> を区別しません（規則は Lee &amp; Ramsey 2011 の 6 章による）．時代のチェックを細かく外すと，その世紀の形だけで探せます．</p>
       <p class="muted">ページ上の語（用例の中の語も）を選ぶと「訳」ボタンが出て，日本語訳を引けます．</p>
-      <p class="muted">形・用例・出典は 우리말샘（国立国語院）の歴史情報，日本語訳は 한국어기초사전（国立国語院）の対訳です．どちらも CC BY-SA 2.0 KR．詳しくは <a href="LICENSE.md">LICENSE.md</a>．</p>
+      <p class="muted">形・用例・出典は <span class="hangul">우리말샘</span>（国立国語院）の歴史情報，日本語訳は <span class="hangul">한국어기초사전</span>（国立国語院）の対訳です．どちらも CC BY-SA 2.0 KR．詳しくは <a href="LICENSE.md">LICENSE.md</a>．</p>
     </div>
   </section>
 </main>
@@ -61,6 +72,7 @@
   <span id="meta"></span>
   <span>書体：Noto Serif CJK KR（OFL）の部分集合　出典：<a href="https://opendict.korean.go.kr/" rel="noopener">우리말샘</a>・<a href="https://krdict.korean.go.kr/" rel="noopener">한국어기초사전</a>（国立国語院，CC BY-SA 2.0 KR）</span>
 </footer>
+<script src="hkey.js"></script>
 <script src="site.js"></script>
 </body>
 </html>

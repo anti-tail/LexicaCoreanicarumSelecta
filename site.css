@@ -1,5 +1,6 @@
 /* Lexica Koreanicarum Selecta — 中期朝鮮語検索（静的サイト）．本体 UI と同じ色と書体 */
-/* 옛한글 を合成表示できる書体（Noto Serif CJK KR の部分集合）．ハングルの範囲だけに使う */
+/* 옛한글 を合成表示できる書体（Noto Serif CJK KR の部分集合）．ハングルの範囲だけに使う．
+   옛한글 を含む要素には必ず .hangul（または --font-hangul）を付ける：iOS では system 書体に落ちると字母が音節にまとまらない */
 @font-face {
   font-family: "LKS Hangul"; src: url("fonts/hangul.woff") format("woff"); font-display: swap;
   unicode-range: U+1100-11FF, U+302E-302F, U+3130-318F, U+A960-A97F, U+AC00-D7A3, U+D7B0-D7FF, U+25CC;
@@ -48,6 +49,10 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .palette .hint { color: var(--faint); font-size: 12px; margin-left: 6px; }
 .stages label { display: inline-flex; gap: 4px; align-items: center; margin-right: 10px; color: var(--muted); cursor: pointer; }
 .label { color: var(--muted); font-size: 12.5px; margin-right: 4px; }
+.label.sep { margin-left: 6px; }
+.mode { height: 28px; border: 1px solid var(--rule-strong); border-radius: 4px; background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; padding: 0 6px; }
+tr.hit td { background: var(--ochre); color: var(--ochre-ink); }
+tr.hit td .tag { background: var(--surface); }
 
 .main { display: grid; grid-template-columns: minmax(300px, 5fr) minmax(0, 7fr); gap: 18px; padding-top: 18px; padding-bottom: 24px; align-items: start; }
 .pane { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; min-width: 0; }
