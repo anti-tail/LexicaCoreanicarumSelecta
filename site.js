@@ -2,7 +2,43 @@
 (() => {
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const VNAME = { LMK15: '15 世紀', LMK16: '16 世紀', OLD: '옛말', EMK17: '17 世紀', EMK18: '18 世紀', EMK19: '19 世紀' };
+  // 表示の言語：<html lang="en"> の英語版（export_site.py --lang en）では英語の表示と英語訳（data/en/）
+  const LANG = (document.documentElement.lang || 'ja').startsWith('en') ? 'en' : 'ja';
+  const TX = {
+    ja: {
+      vname: { LMK15: '15 世紀', LMK16: '16 世紀', OLD: '옛말', EMK17: '17 世紀', EMK18: '18 世紀', EMK19: '19 世紀' },
+      nItems: n => `${n} 項目`, top300: '（上位 300）', searched: how => `　${how}探しました`,
+      how: { yale: 'Yale で', tr: '日本語訳で', both: 'Yale と英語訳で', era: '形（時代ごとの綴りの揺れを吸収）と見出しで', syl: '形（音節の組み方を吸収）と見出しで', exact: '形（表記どおり）と見出しで' },
+      none: '見つかりません．綴りを短くするか，時代の絞り込みや照合のしかたを変えてください．',
+      forms: '時代ごとの形', thForms: ['時代', '形', 'Yale（参考）', '声調'], cites: '用例', thCites: ['時代', '年', '出典', '用例'],
+      source: tr => `出典：우리말샘（国立国語院）の歴史情報${tr ? '，日本語訳は 한국어기초사전' : ''}．CC BY-SA 2.0 KR．`, openOD: '우리말샘 で開く',
+      mapAria: '方言形の分布', outside: '（地図の外）', dial: '方言形', dialN: (g, r) => `${g} 形・${r} 地域`,
+      dialNote: '우리말샘 で同じ現代語に結ばれた方言項目の形．地域は 우리말샘 の地域区分（道単位）で，点はその代表地点．凡例を選ぶとその形だけを強調します．地図：Natural Earth を簡略化．',
+      sep: '，', trBtn: '訳', trAria: '日本語訳', look: '引く', looking: '引いています…', asOld: f => `中期・近世の形 <span class="hangul">${f}</span> として`,
+      asModern: '現代語として（한국어기초사전）', trNone: '見つかりませんでした．語尾を外した形に直して「引く」を押してください．', searchThis: 'この語で検索',
+      naver: q => `<a href="https://ja.dict.naver.com/#/search?query=${encodeURIComponent(q)}" target="_blank" rel="noopener">NAVER 韓日辞典で開く</a>`,
+      meta: (m) => `${m.entries.toLocaleString()} 項目・${m.forms.toLocaleString()} 形・${m.citations.toLocaleString()} 用例（${m.built} 作成）`,
+      loadErr: 'データを読み込めませんでした．ページをウェブサーバー経由で開いてください（file:// では読めません）．',
+      light: '明るい表示にする', dark: '暗い表示にする',
+    },
+    en: {
+      vname: { LMK15: '15th c.', LMK16: '16th c.', OLD: 'Old (undated)', EMK17: '17th c.', EMK18: '18th c.', EMK19: '19th c.' },
+      nItems: n => `${n} entr${n === '1' ? 'y' : 'ies'}`, top300: ' (top 300)', searched: how => ` — matched ${how}`,
+      how: { yale: 'by Yale', tr: 'by English translation', both: 'by English translation and Yale', era: 'by form (allowing each century’s spelling variation) and headword', syl: 'by form (ignoring syllable division) and headword', exact: 'by form (exact spelling) and headword' },
+      none: 'Nothing found. Try a shorter spelling, more centuries, or another matching mode.',
+      forms: 'Forms by period', thForms: ['Period', 'Form', 'Yale (ref.)', 'Tone'], cites: 'Citations', thCites: ['Period', 'Year', 'Source', 'Citation'],
+      source: tr => `Sources: historical data of 우리말샘 (National Institute of Korean Language)${tr ? '; English from 한국어기초사전' : ''}. CC BY-SA 2.0 KR. `, openOD: 'Open in 우리말샘',
+      mapAria: 'Distribution of dialect forms', outside: ' (off the map)', dial: 'Dialect forms', dialN: (g, r) => `${g} forms · ${r} regions`,
+      dialNote: 'Forms of dialect entries linked to the same modern word in 우리말샘. Regions follow 우리말샘 (provinces); each dot is a representative point. Select a legend item to highlight that form. Map: simplified Natural Earth.',
+      sep: ', ', trBtn: 'EN', trAria: 'English translation', look: 'Look up', looking: 'Looking up…', asOld: f => `As the Middle/Early Modern form <span class="hangul">${f}</span>`,
+      asModern: 'As modern Korean (한국어기초사전)', trNone: 'Nothing found. Remove the ending and press “Look up”.', searchThis: 'Search this word',
+      naver: q => `<a href="https://en.dict.naver.com/#/search?query=${encodeURIComponent(q)}" target="_blank" rel="noopener">Open in NAVER Korean–English Dictionary</a>`,
+      meta: (m) => `${m.entries.toLocaleString()} entries · ${m.forms.toLocaleString()} forms · ${m.citations.toLocaleString()} citations (built ${m.built})`,
+      loadErr: 'Could not load the data. Open the page through a web server (file:// does not work).',
+      light: 'Light theme', dark: 'Dark theme',
+    },
+  }[LANG];
+  const VNAME = TX.vname;
   const VCLS = { LMK15: 'L', LMK16: 'L', OLD: 'O', EMK17: 'E', EMK18: 'E', EMK19: 'E' };
   const vtag = v => `<span class="tag v-${VCLS[v] || ''}">${esc(VNAME[v] || v)}</span>`;
   const HIST = ['LMK15', 'LMK16', 'OLD', 'EMK17', 'EMK18', 'EMK19'];              // data の世紀番号（0–5）
@@ -80,11 +116,13 @@
   function score(row, q, kind, st, Q) {
     const [, hw, , ja, , yale, stages, gl] = row;
     let s = 0;
-    if (kind === 'yale' || kind === 'ja') {
+    if (kind === 'yale' || kind === 'tr' || kind === 'both') {
       if (![...stages].some(c => st.has(+c))) return 0;
-      if (kind === 'yale') {
+      if (kind !== 'tr') {
         for (const y of yale.split('|')) { if (!y) continue; if (y === q) s = Math.max(s, 4); else if (y.startsWith(q)) s = Math.max(s, 3); else if (y.includes(q)) s = Math.max(s, 1.5); }
-      } else if (ja.includes(q)) s = ja.startsWith(q) ? 3 : 2;
+      }
+      if (kind === 'tr' && ja.includes(q)) s = ja.startsWith(q) ? 3 : 2;
+      if (kind === 'both' && ja) s = Math.max(s, enScore(ja, q));
       return s;
     }
     const m = mode();
@@ -95,14 +133,30 @@
     if (!s && gl && gl.normalize('NFD').includes(q)) s = 0.5;
     return s;
   }
+  // 英語訳の一致度：訳語のどれかと完全一致（to を除いて）> 語の単位で一致 > 前方一致．訳語は '; ' 区切り
+  const EN_RE = new Map();
+  function enScore(tr, q) {
+    let re = EN_RE.get(q);
+    if (!re) { re = new RegExp(`(^|[^a-z])${q.replace(/^(to|a|an|the) /, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^a-z])`); EN_RE.set(q, re); }
+    const t = tr.toLowerCase(), qc = q.replace(/^(to|a|an|the) /, '');
+    let s = 0;
+    for (const item of t.split(/\s*[;,]\s*/)) {
+      const w = item.replace(/^(to|a|an|the) /, '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
+      if (w === qc || item === q) return 4.2;
+      if (re.test(item)) s = Math.max(s, item.split(' ').length <= 3 ? 3.2 : 2.4);
+      else if (w.startsWith(q)) s = Math.max(s, 1.6);
+    }
+    return s;
+  }
   let lastQ = null;
   function search(raw) {
     const q0 = (raw || '').trim();
     lastQ = null;
-    if (!q0) { $('#results').innerHTML = ''; $('#info').textContent = `${INDEX.length.toLocaleString()} 項目`; return; }
+    if (!q0) { $('#results').innerHTML = ''; $('#info').textContent = TX.nItems(INDEX.length.toLocaleString()); return; }
     let kind = 'hangul', q;
-    if (/^[a-zA-Z.\- ]+$/.test(q0)) { kind = 'yale'; q = q0.toLowerCase().replace(/\s+/g, ' '); }
-    else if (/[぀-ヿ㐀-鿿]/.test(q0) && !/[ᄀ-ᇿ가-힣㄰-㆏]/.test(q0)) { kind = 'ja'; q = q0; }
+    // 英語版：ラテン文字は Yale と英語訳の両方で引く（mozom も heart も）
+    if (/^[a-zA-Z.\-' ]+$/.test(q0)) { kind = LANG === 'en' ? 'both' : 'yale'; q = q0.toLowerCase().replace(/\s+/g, ' '); }
+    else if (LANG === 'ja' && /[぀-ヿ㐀-鿿]/.test(q0) && !/[ᄀ-ᇿ가-힣㄰-㆏]/.test(q0)) { kind = 'tr'; q = q0; }
     else q = normalize(q0);
     const st = sel(), Q = kind === 'hangul' ? (lastQ = queryKeys(q)) : null;
     const hits = [];
@@ -111,8 +165,8 @@
       if (s) hits.push([s, row]);
     }
     hits.sort((a, b) => b[0] - a[0] || a[1][1].length - b[1][1].length || a[1][2] - b[1][2]);
-    const how = { yale: 'Yale で', ja: '日本語訳で', hangul: { era: '形（時代ごとの綴りの揺れを吸収）と見出しで', syl: '形（音節の組み方を吸収）と見出しで', exact: '形（表記どおり）と見出しで' }[mode()] }[kind];
-    $('#info').textContent = hits.length ? `${hits.length.toLocaleString()} 項目${hits.length > 300 ? '（上位 300）' : ''}　${how}探しました` : '見つかりません．綴りを短くするか，時代の絞り込みや照合のしかたを変えてください．';
+    const how = kind === 'hangul' ? TX.how[mode()] : TX.how[kind];
+    $('#info').textContent = hits.length ? `${TX.nItems(hits.length.toLocaleString())}${hits.length > 300 ? TX.top300 : ''}${TX.searched(how)}` : TX.none;
     $('#results').innerHTML = hits.slice(0, 300).map(([, r]) => {
       const fs = rowForms(r), m = Q && fs.filter(f => st.has(f[0]) && formScore(f, Q, mode()) > 0);
       const shown = [...new Set((m && m.length ? m : fs.filter(f => st.has(f[0]))).concat(fs).map(f => f[1].normalize('NFC')))].slice(0, 4);
@@ -143,20 +197,22 @@
     $$('#results .item').forEach(li => li.setAttribute('aria-selected', +li.dataset.id === id));
     if (!keepHash) setHash();
     const e = (await shard(id % (META.shards || 64)))[id];
+    if (e) e.ja = e[LANG] || e.ja || [];
     if (e && e.d && !MAP) await loadMap();
     if (!e || current !== id) return;
     const order = Object.keys(VNAME);
     const forms = e.f.slice().sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]) || (a[5] || 0) - (b[5] || 0));
     let h = `<div class="entry"><div class="entry-hw">${esc(e.hw)}${e.sn ? `<small>「${e.sn}」</small>` : ''}</div>
       <div>${[e.pos, e.wt].filter(Boolean).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-      ${e.ja.length ? `<div class="entry-ja">${e.ja.map(esc).join('　／　')}</div>` : ''}
+      ${e.ja.length ? `<div class="entry-ja">${e.ja.map(esc).join(LANG === 'en' ? ' / ' : '　／　')}</div>` : ''}
       ${e.gl ? `<div class="entry-gl">${esc(e.gl)}</div>` : ''}`;
-    if (forms.length) h += `<h3>時代ごとの形<span class="n">${forms.length}</span></h3><table><thead><tr><th>時代</th><th>形</th><th>Yale（参考）</th><th>声調</th></tr></thead><tbody>` +
+    const th = a => `<thead><tr>${a.map(x => `<th>${x}</th>`).join('')}</tr></thead>`;
+    if (forms.length) h += `<h3>${TX.forms}<span class="n">${forms.length}</span></h3><table>${th(TX.thForms)}<tbody>` +
       forms.map(f => `<tr${hitForm(f) ? ' class="hit"' : ''}><td>${vtag(f[0])}</td><td class="hangul">${esc(f[1])}</td><td class="ipa">${esc(f[2])}</td><td class="faint">${esc(f[4])}</td></tr>`).join('') + '</tbody></table>';
     if (e.d && e.d.length && MAP) h += dialectMap(e.d);
-    if (e.c.length) h += `<h3>用例<span class="n">${e.c.length}</span></h3><table><thead><tr><th>時代</th><th>年</th><th>出典</th><th>用例</th></tr></thead><tbody>` +
+    if (e.c.length) h += `<h3>${TX.cites}<span class="n">${e.c.length}</span></h3><table>${th(TX.thCites)}<tbody>` +
       e.c.map(c => `<tr><td>${vtag(c[0])}</td><td class="num">${esc(c[2] ?? '')}</td><td class="num">${esc(c[3])}</td><td class="ctx">${ctx(c[4]) || `<span class="hangul">${esc(c[1])}</span>`}</td></tr>`).join('') + '</tbody></table>';
-    h += `<p class="faint" style="font-size:12px;margin-top:18px">出典：우리말샘（国立国語院）の歴史情報${e.ja.length ? '，日本語訳は 한국어기초사전' : ''}．CC BY-SA 2.0 KR．<a href="https://opendict.korean.go.kr/search/searchResult?query=${encodeURIComponent(e.hw)}" rel="noopener" target="_blank">우리말샘 で開く</a></p></div>`;
+    h += `<p class="faint" style="font-size:12px;margin-top:18px">${TX.source(e.ja.length)}<a href="https://opendict.korean.go.kr/search/searchResult?query=${encodeURIComponent(e.hw)}" rel="noopener" target="_blank">${TX.openOD}</a></p></div>`;
     $('#detail').innerHTML = h;
     $('#detail').scrollTop = 0;
     $$('#detail .dleg li').forEach(li => { li.onclick = () => focusGroup(li); li.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusGroup(li); } }; });
@@ -198,7 +254,7 @@
     groups.forEach(([, codes], gi) => codes.forEach(c => (at[c] ??= []).push(gi)));
     const lit = new Set();
     Object.keys(at).forEach(c => { lit.add(c); Object.entries(R).forEach(([k, r]) => { if (r[1] === c) lit.add(k); }); });
-    let svg = `<svg class="dmap-svg" viewBox="0 0 ${MAP.w} ${MAP.h}" role="img" aria-label="方言形の分布">
+    let svg = `<svg class="dmap-svg" viewBox="0 0 ${MAP.w} ${MAP.h}" role="img" aria-label="${TX.mapAria}">
       <rect width="${MAP.w}" height="${MAP.h}" class="dm-sea"/>`;
     MAP.shapes.forEach(([kind, code, path]) => { svg += `<path d="${path}" class="${kind === 'land' ? 'dm-land' : lit.has(code) ? 'dm-prov dm-lit' : 'dm-prov'}"/>`; });
     const outside = [];
@@ -213,10 +269,10 @@
       });
     });
     svg += '</svg>';
-    const leg = groups.map(([form, codes], gi) => `<li data-g="${gi}" tabindex="0"><span class="dl-sym">${gi < TOP ? legendMark(gi) : '<svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="2.6" class="dm-other"/></svg>'}</span><span class="hangul dl-form">${esc(form)}</span><span class="dl-reg">${codes.map(c => esc(rname(c).replace(/ 방언$/, ''))).join('，')}${codes.some(c => outside.includes(c)) ? '<span class="faint">（地図の外）</span>' : ''}</span></li>`).join('');
-    return `<h3>方言形<span class="n">${groups.length} 形・${Object.keys(at).length} 地域</span></h3>
+    const leg = groups.map(([form, codes], gi) => `<li data-g="${gi}" tabindex="0"><span class="dl-sym">${gi < TOP ? legendMark(gi) : '<svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="2.6" class="dm-other"/></svg>'}</span><span class="hangul dl-form">${esc(form)}</span><span class="dl-reg">${codes.map(c => esc(rname(c).replace(/ 방언$/, ''))).join(TX.sep)}${codes.some(c => outside.includes(c)) ? `<span class="faint">${TX.outside}</span>` : ''}</span></li>`).join('');
+    return `<h3>${TX.dial}<span class="n">${TX.dialN(groups.length, Object.keys(at).length)}</span></h3>
       <div class="dmap">${svg}<ul class="dleg">${leg}</ul></div>
-      <p class="faint dmap-note">우리말샘 で同じ現代語に結ばれた方言項目の形．地域は 우리말샘 の地域区分（道単位）で，点はその代表地点．凡例を選ぶとその形だけを強調します．地図：Natural Earth を簡略化．</p>`;
+      <p class="faint dmap-note">${TX.dialNote}</p>`;
   }
   function focusGroup(li) {
     const box = li.closest('.dmap'), g = li.dataset.g, on = li.getAttribute('aria-pressed') !== 'true';
@@ -254,9 +310,9 @@
     return [...new Set(out.filter(Boolean))].slice(0, 24);
   }
   const JA = {};
-  const jaShard = n => (JA[n] ??= fetch(`data/ja/${String(n).padStart(2, '0')}.json`).then(r => r.json()).catch(() => ({})));
+  const jaShard = n => (JA[n] ??= fetch(`data/${LANG}/${String(n).padStart(2, '0')}.json`).then(r => r.json()).catch(() => ({})));
   async function jaLookup(cands) {
-    const shards = [...new Set(cands.map(c => c.codePointAt(0) % (META.ja_shards || 32)))];
+    const shards = [...new Set(cands.map(c => c.codePointAt(0) % (META.tr_shards || META.ja_shards || 32)))];
     const loaded = await Promise.all(shards.map(jaShard));
     const dict = Object.assign({}, ...loaded), hits = [];
     cands.forEach(c => (dict[c] || []).forEach(x => hits.push([c, ...x])));
@@ -289,7 +345,7 @@
       dropBtn();
       if (!t || t.length > 30 || !/[ᄀ-ᇿ가-힣ꥠ-꥿ힰ-퟿]/.test(t) || !sel.rangeCount) return;
       const r = sel.getRangeAt(0).getBoundingClientRect();
-      tbtn = Object.assign(document.createElement('button'), { type: 'button', className: 'tr-btn', textContent: '訳' });
+      tbtn = Object.assign(document.createElement('button'), { type: 'button', className: 'tr-btn', textContent: TX.trBtn });
       tbtn.style.left = Math.min(scrollX + r.right + 6, scrollX + innerWidth - 60) + 'px';
       tbtn.style.top = (scrollY + r.top - 4) + 'px';
       tbtn.addEventListener('mousedown', ev => ev.preventDefault());
@@ -301,9 +357,9 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { dropBtn(); dropPop(); } });
   function openPop(word, at) {
     dropPop();
-    tpop = document.createElement('div'); tpop.className = 'tr-pop'; tpop.setAttribute('role', 'dialog'); tpop.setAttribute('aria-label', '日本語訳');
+    tpop = document.createElement('div'); tpop.className = 'tr-pop'; tpop.setAttribute('role', 'dialog'); tpop.setAttribute('aria-label', TX.trAria);
     tpop.style.left = Math.max(scrollX + 8, Math.min(at.x, scrollX + innerWidth - 432)) + 'px'; tpop.style.top = at.y + 'px';
-    tpop.innerHTML = `<form class="tr-head"><input value="${esc(word)}" aria-label="引く語"><button type="submit">引く</button></form><div class="tr-body"></div><div class="tr-foot"></div>`;
+    tpop.innerHTML = `<form class="tr-head"><input value="${esc(word)}" aria-label="${TX.look}"><button type="submit">${TX.look}</button></form><div class="tr-body"></div><div class="tr-foot"></div>`;
     document.body.appendChild(tpop);
     const inp = tpop.querySelector('input');
     tpop.querySelector('form').addEventListener('submit', e => { e.preventDefault(); runTr(compose(inp.value).normalize('NFC')); });
@@ -311,20 +367,20 @@
   }
   async function runTr(word) {
     const body = tpop.querySelector('.tr-body'), foot = tpop.querySelector('.tr-foot');
-    body.innerHTML = '<div class="loading">引いています…</div>';
+    body.innerHTML = `<div class="loading">${TX.looking}</div>`;
     const old = oldForms(word), cands = candidates(word), ja = cands.length ? await jaLookup(cands) : [];
     let h = '';
     if (old.rows.length) {
-      h += `<div class="tr-sec">中期・近世の形 <span class="hangul">${esc(old.form)}</span> として</div>` + old.rows.map(r =>
+      h += `<div class="tr-sec">${TX.asOld(esc(old.form))}</div>` + old.rows.map(r =>
         `<div class="tr-hit"><a href="#" class="tr-hw" data-open="${r[0]}">${esc(r[1])}</a>${r[2] ? `<span class="faint">「${r[2]}」</span>` : ''}${r[3] ? `<div class="tr-ja">${esc(r[3])}</div>` : ''}<div class="tr-ko">${esc(r[7] || '')}</div></div>`).join('');
     }
     if (ja.length) {
-      h += `<div class="tr-sec">現代語として（한국어기초사전）</div>` + ja.map(([hw, pos, sn, jl, jd, ko]) =>
+      h += `<div class="tr-sec">${TX.asModern}</div>` + ja.map(([hw, pos, sn, jl, jd, ko]) =>
         `<div class="tr-hit"><span class="tr-hw">${esc(hw)}</span> <span class="tag">${esc(pos || '')}</span>${sn ? `<span class="faint">「${sn}」</span>` : ''}<div class="tr-ja">${esc(jl)}</div>${jd ? `<div class="tr-def">${esc(jd)}</div>` : ''}<div class="tr-ko">${esc(ko || '')}</div></div>`).join('');
     }
-    body.innerHTML = h || `<div class="tr-hit tr-def">見つかりませんでした．語尾を外した形に直して「引く」を押してください．</div>`;
+    body.innerHTML = h || `<div class="tr-hit tr-def">${TX.trNone}</div>`;
     const key = old.form || cands[0] || word;
-    foot.innerHTML = `<a href="#q=${encodeURIComponent(key)}">この語で検索</a><a href="https://ja.dict.naver.com/#/search?query=${encodeURIComponent(cands[0] || word)}" target="_blank" rel="noopener">NAVER 韓日辞典で開く</a>`;
+    foot.innerHTML = `<a href="#q=${encodeURIComponent(key)}">${TX.searchThis}</a>${TX.naver(cands[0] || word)}`;
     body.querySelectorAll('[data-open]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); dropPop(); open(+a.dataset.open); }));
   }
 
@@ -353,6 +409,8 @@
   const remember = () => { caret = [qi.selectionStart, qi.selectionEnd]; };
   ['keyup', 'click', 'select', 'input', 'compositionend', 'blur'].forEach(ev => qi.addEventListener(ev, remember));
   function insertJamo(ch) {
+    // ハングルキーボード（hangulkbd.js）があれば，その組み立て（겹모음・겹받침も）で入れる
+    if (window.HKbd) { if (caret) qi.setSelectionRange(caret[0], caret[1]); window.HKbd.type(ch, qi); remember(); return; }
     const v = qi.value, [a, b] = caret || [v.length, v.length];
     const head = compose(v.slice(0, a) + ch).normalize('NFC'), tail = v.slice(b);
     qi.value = head + tail;
@@ -366,7 +424,7 @@
   // 表示
   try { const t = localStorage.getItem('lexica.theme'); if (t) document.documentElement.dataset.theme = t; } catch (_) { /* なし */ }
   const isDark = () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
-  const lab = () => { $('#theme').textContent = isDark() ? '明るい表示にする' : '暗い表示にする'; };
+  const lab = () => { $('#theme').textContent = isDark() ? TX.light : TX.dark; };
   lab();
   $('#theme').onclick = () => { document.documentElement.dataset.theme = isDark() ? 'light' : 'dark'; try { localStorage.setItem('lexica.theme', document.documentElement.dataset.theme); } catch (_) { /* なし */ } lab(); };
   const top = $('.top'); const setTop = () => document.documentElement.style.setProperty('--top-h', top.offsetHeight + 'px');
@@ -374,7 +432,7 @@
 
   Promise.all([fetch('data/meta.json').then(r => r.json()), fetch('data/index.json').then(r => r.json()), fetch('data/jamo.json').then(r => r.json())]).then(([m, idx, jamo]) => {
     META = m; INDEX = idx; HKey.init(jamo);
-    $('#meta').textContent = `${m.entries.toLocaleString()} 項目・${m.forms.toLocaleString()} 形・${m.citations.toLocaleString()} 用例（${m.built} 作成）`;
+    $('#meta').textContent = TX.meta(m);
     fromHash();
-  }).catch(() => { $('#info').textContent = 'データを読み込めませんでした．ページをウェブサーバー経由で開いてください（file:// では読めません）．'; });
+  }).catch(() => { $('#info').textContent = TX.loadErr; });
 })();

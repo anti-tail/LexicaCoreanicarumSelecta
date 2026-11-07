@@ -13,4 +13,4 @@
   許諾の全文：<https://creativecommons.org/licenses/by-sa/2.0/kr/>
 - 原資料の内容について国立国語院は本サイトの責任を負いません．誤りに気づいたら Issue でお知らせください．
 
-プログラム（`index.html`, `site.js`, `hkey.js`, `site.css`）は Lexica Koreanicarum プロジェクトのものです．
+プログラム（`index.html`, `site.js`, `hkey.js`, `hangulkbd.js`, `site.css`）は Lexica Koreanicarum プロジェクトのものです．
