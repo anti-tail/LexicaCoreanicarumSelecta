@@ -132,3 +132,8 @@ mark { background: var(--ochre); color: var(--ochre-ink); padding: 0 2px; border
 .dl-form { font-size: 16px; }
 .dl-reg { color: var(--muted); font-size: 12px; }
 .dmap-note { font-size: 12px; margin: 6px 0 0; }
+.top-links { display: inline-flex; align-items: baseline; gap: 12px; font-size: 13px; }
+/* 誤りの報告と訂正の印 */
+.report { font-size: 12px; }
+.tag.fixed { background: var(--celadon-soft); color: var(--celadon); border-color: transparent; }
+tr.hidden-form td { opacity: .45; text-decoration: line-through; }

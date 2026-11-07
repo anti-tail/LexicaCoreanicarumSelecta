@@ -1,0 +1,59 @@
+name: 訳・形の対応付けの誤り / Wrong translation or form
+description: 日本語訳・英語訳と中期朝鮮語の項目の対応，または項目に入っている形の誤りを知らせる / Report a wrong Japanese/English translation or a form that does not belong to an entry
+title: "[項目番号 / entry id] 見出し / headword"
+labels: ["correction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        サイトの項目の下にある「誤りを報告」から開くと，項目番号・見出し・今の訳と形が入っています．直し方の案を書いてください．
+        Opening this from “Report an error” under an entry fills in the entry id, headword and current data. Please describe the fix.
+  - type: input
+    id: entry_id
+    attributes:
+      label: 項目番号 / Entry id
+      description: URL の #id= の数字 / the number after #id= in the URL
+    validations:
+      required: true
+  - type: input
+    id: headword
+    attributes:
+      label: 見出し / Headword
+  - type: input
+    id: lang
+    attributes:
+      label: 画面の言語 / Page language
+      description: ja または en
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 誤りの種類 / Kind of error
+      options:
+        - 訳が違う（別の意味の訳が付いている）/ Wrong translation (belongs to another sense)
+        - 訳が足りない / Missing translation
+        - 訳を消すべき / Translation should be removed
+        - この形はこの項目のものではない / This form does not belong to this entry
+        - その他 / Other
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 今の訳と形 / Current translations and forms
+      render: text
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 直し方の案 / Proposed fix
+      description: 正しい訳（日本語・英語），外すべき形など / the correct translation(s), the form to remove, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 根拠 / Evidence
+      description: 文献・辞書・用例など（任意）/ references, dictionaries, citations (optional)
+  - type: input
+    id: page
+    attributes:
+      label: ページ / Page

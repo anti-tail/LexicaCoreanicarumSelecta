@@ -20,6 +20,8 @@
       meta: (m) => `${m.entries.toLocaleString()} 項目・${m.forms.toLocaleString()} 形・${m.citations.toLocaleString()} 用例（${m.built} 作成）`,
       loadErr: 'データを読み込めませんでした．ページをウェブサーバー経由で開いてください（file:// では読めません）．',
       light: '明るい表示にする', dark: '暗い表示にする',
+      report: '誤りを報告', reportTip: '訳や形の対応付けの誤りを GitHub の Issue で知らせる（GitHub のアカウントが要ります）',
+      fixed: '訂正済み', fixedTip: '協力者による訂正（corrections/translations.tsv）', hidden: '訂正で除外', origTr: '元の訳',
     },
     en: {
       vname: { LMK15: '15th c.', LMK16: '16th c.', OLD: 'Old (undated)', EMK17: '17th c.', EMK18: '18th c.', EMK19: '19th c.' },
@@ -36,9 +38,15 @@
       meta: (m) => `${m.entries.toLocaleString()} entries · ${m.forms.toLocaleString()} forms · ${m.citations.toLocaleString()} citations (built ${m.built})`,
       loadErr: 'Could not load the data. Open the page through a web server (file:// does not work).',
       light: 'Light theme', dark: 'Dark theme',
+      report: 'Report an error', reportTip: 'Report a wrong translation or form assignment as a GitHub Issue (needs a GitHub account)',
+      fixed: 'corrected', fixedTip: 'Corrected by a collaborator (corrections/translations.tsv)', hidden: 'removed by correction', origTr: 'original',
     },
   }[LANG];
   const VNAME = TX.vname;
+  // 英語版は en/ にあり，データは 1 つ上（<meta name="lexica-base" content="../">）．一覧の行の訳は日本語 3 番目，英語 9 番目
+  const BASE = document.querySelector('meta[name="lexica-base"]')?.content || '';
+  const REPO = document.querySelector('meta[name="lexica-repo"]')?.content || 'https://github.com/anti-tail/LexicaCoreanicarumSelecta';
+  const TRI = LANG === 'en' ? 9 : 3, TRSEP = LANG === 'en' ? '; ' : '；';
   const VCLS = { LMK15: 'L', LMK16: 'L', OLD: 'O', EMK17: 'E', EMK18: 'E', EMK19: 'E' };
   const vtag = v => `<span class="tag v-${VCLS[v] || ''}">${esc(VNAME[v] || v)}</span>`;
   const HIST = ['LMK15', 'LMK16', 'OLD', 'EMK17', 'EMK18', 'EMK19'];              // data の世紀番号（0–5）
@@ -114,7 +122,7 @@
     return L ? Math.max(s, 2.5 + L) : s;
   }
   function score(row, q, kind, st, Q) {
-    const [, hw, , ja, , yale, stages, gl] = row;
+    const [, hw, , , , yale, stages, gl] = row, ja = row[TRI] || '';
     let s = 0;
     if (kind === 'yale' || kind === 'tr' || kind === 'both') {
       if (![...stages].some(c => st.has(+c))) return 0;
@@ -172,16 +180,72 @@
       const shown = [...new Set((m && m.length ? m : fs.filter(f => st.has(f[0]))).concat(fs).map(f => f[1].normalize('NFC')))].slice(0, 4);
       return `<li class="item" data-id="${r[0]}" tabindex="0" aria-selected="${r[0] === current}">
         <div class="item-head"><span class="item-hw">${esc(r[1])}</span>${r[2] ? `<span class="faint">「${r[2]}」</span>` : ''}<span class="item-old">${shown.map(esc).join('　')}</span></div>
-        ${r[3] ? `<div class="item-ja">${esc(r[3])}</div>` : ''}${r[7] ? `<div class="item-gl">${esc(r[7])}</div>` : ''}</li>`;
+        ${r[TRI] ? `<div class="item-ja">${esc(r[TRI])}</div>` : ''}${r[7] ? `<div class="item-gl">${esc(r[7])}</div>` : ''}</li>`;
     }).join('');
     $$('#results .item').forEach(li => { li.onclick = () => open(+li.dataset.id); li.onkeydown = e => { if (e.key === 'Enter') open(+li.dataset.id); }; });
     if (hits.length && !current) open(hits[0][1][0], true);
     else if (current) open(current, true);
   }
 
+  // ---------- 訳と形の対応付けの訂正（corrections/translations.tsv．協力者が公開用リポジトリで直す．書式は CONTRIBUTING.md）
+  //   id  lang  op  value  issue  by  note
+  //   op = set（訳を value に置き換える．複数は | 区切り）／ add（訳を足す）／ remove（訳を外す）／ hide-form（形 value をこの項目から外す．lang は -）
+  const CORR = new Map();
+  const nfc = s => (s || '').normalize('NFC').replace(/[\u302E\u302F]/g, '').trim();
+  function loadCorrections(text) {
+    for (const line of (text || '').split(/\r?\n/)) {
+      if (!line.trim() || line.startsWith('#') || line.startsWith('id\t')) continue;
+      const [id, lang, op, value = '', issue = ''] = line.split('\t');
+      if (!/^\d+$/.test(id) || !op) continue;
+      const c = CORR.get(+id) || { tr: { ja: [], en: [] }, hide: new Set(), issues: new Set() };
+      if (op === 'hide-form') c.hide.add(nfc(value));
+      else if (c.tr[lang] && ['set', 'add', 'remove'].includes(op)) c.tr[lang].push([op, value.split('|').map(x => x.trim()).filter(Boolean)]);
+      else continue;
+      if (issue.trim()) c.issues.add(issue.trim().replace(/^#/, ''));
+      CORR.set(+id, c);
+    }
+    if (!CORR.size) return;
+    // 一覧の行（検索に使う）にも当てる：訳の列と，外した形
+    for (const row of INDEX) {
+      const c = CORR.get(row[0]); if (!c) continue;
+      if (c.tr[LANG].length) row[TRI] = applyTr(row[0], (row[TRI] || '').split(TRSEP).filter(Boolean)).slice(0, LANG === 'en' ? 6 : 1).join(TRSEP);
+      if (c.hide.size && row[4]) {
+        const fs = row[4].split('|'), ks = (row[8] || '').split('|'), keep = fs.map(x => !c.hide.has(nfc(x.slice(1))));
+        row[4] = fs.filter((_, i) => keep[i]).join('|'); row[8] = ks.filter((_, i) => keep[i]).join('|'); delete row._f;
+      }
+    }
+  }
+  function applyTr(id, list) {
+    const c = CORR.get(id); let out = list.slice();
+    if (!c) return out;
+    for (const [op, vals] of c.tr[LANG]) {
+      if (op === 'set') out = vals.slice();
+      else if (op === 'add') vals.forEach(v => { if (!out.includes(v)) out.push(v); });
+      else if (op === 'remove') out = out.filter(x => !vals.includes(x));
+    }
+    return out;
+  }
+  const isHidden = (id, form) => !!CORR.get(id)?.hide.has(nfc(form));
+  function fixedNote(id, e) {
+    const c = CORR.get(id); if (!c || (!c.tr[LANG].length && !c.hide.size)) return '';
+    const iss = [...c.issues].map(n => `<a href="${REPO}/issues/${encodeURIComponent(n)}" target="_blank" rel="noopener">#${esc(n)}</a>`).join(' ');
+    const orig = c.tr[LANG].length && e.tr0.join() !== e.ja.join() ? ` <span class="faint">${TX.origTr}: ${esc(e.tr0.join(TRSEP) || '—')}</span>` : '';
+    return `<div class="faint" style="font-size:12px"><span class="tag fixed" title="${esc(TX.fixedTip)}">${TX.fixed}</span>${iss}${orig}</div>`;
+  }
+  // 「誤りを報告」：GitHub の Issue の書式（.github/ISSUE_TEMPLATE/correction.yml）に項目の情報を入れて開く
+  function reportUrl(e, forms) {
+    const p = new URLSearchParams({
+      template: 'correction.yml', title: `[${e.id}] ${e.hw}${e.sn ? '「' + e.sn + '」' : ''}`,
+      entry_id: String(e.id), headword: `${e.hw}${e.sn ? ' 「' + e.sn + '」' : ''}`, lang: LANG,
+      current: `${LANG}: ${e.ja.join(TRSEP) || '—'}\n${LANG === 'en' ? 'ja' : 'en'}: ${(e.other || []).join(LANG === 'en' ? '；' : '; ') || '—'}\nforms: ${[...new Set(forms.map(f => f[1].normalize("NFC")))].join(" ")}`,
+      page: location.href.split('#')[0] + `#id=${e.id}`,
+    });
+    return `${REPO}/issues/new?${p}`;
+  }
+
   // ---------- 項目
   async function shard(n) {
-    if (!SHARDS[n]) SHARDS[n] = fetch(`data/e/${String(n).padStart(2, '0')}.json`).then(r => r.json());
+    if (!SHARDS[n]) SHARDS[n] = fetch(`${BASE}data/e/${String(n).padStart(2, '0')}.json`).then(r => r.json());
     return SHARDS[n];
   }
   // 項目の形が今の問いに当たるか（当たった形の行に印を付ける）
@@ -197,22 +261,22 @@
     $$('#results .item').forEach(li => li.setAttribute('aria-selected', +li.dataset.id === id));
     if (!keepHash) setHash();
     const e = (await shard(id % (META.shards || 64)))[id];
-    if (e) e.ja = e[LANG] || e.ja || [];
+    if (e) { e._orig ??= { ja: e.ja || [], en: e.en || [] }; e.tr0 = e._orig[LANG]; e.other = e._orig[LANG === 'en' ? 'ja' : 'en']; e.ja = applyTr(id, e.tr0); }
     if (e && e.d && !MAP) await loadMap();
     if (!e || current !== id) return;
     const order = Object.keys(VNAME);
     const forms = e.f.slice().sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]) || (a[5] || 0) - (b[5] || 0));
     let h = `<div class="entry"><div class="entry-hw">${esc(e.hw)}${e.sn ? `<small>「${e.sn}」</small>` : ''}</div>
       <div>${[e.pos, e.wt].filter(Boolean).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-      ${e.ja.length ? `<div class="entry-ja">${e.ja.map(esc).join(LANG === 'en' ? ' / ' : '　／　')}</div>` : ''}
+      ${e.ja.length ? `<div class="entry-ja">${e.ja.map(esc).join(LANG === 'en' ? ' / ' : '　／　')}</div>` : ''}${fixedNote(id, e)}
       ${e.gl ? `<div class="entry-gl">${esc(e.gl)}</div>` : ''}`;
     const th = a => `<thead><tr>${a.map(x => `<th>${x}</th>`).join('')}</tr></thead>`;
     if (forms.length) h += `<h3>${TX.forms}<span class="n">${forms.length}</span></h3><table>${th(TX.thForms)}<tbody>` +
-      forms.map(f => `<tr${hitForm(f) ? ' class="hit"' : ''}><td>${vtag(f[0])}</td><td class="hangul">${esc(f[1])}</td><td class="ipa">${esc(f[2])}</td><td class="faint">${esc(f[4])}</td></tr>`).join('') + '</tbody></table>';
+      forms.map(f => { const hid = isHidden(id, f[1]); return `<tr${hid ? ' class="hidden-form"' : hitForm(f) ? ' class="hit"' : ''}><td>${vtag(f[0])}</td><td class="hangul">${esc(f[1])}</td><td class="ipa">${esc(f[2])}</td><td class="faint">${hid ? `<span class="tag fixed" title="${esc(TX.fixedTip)}">${TX.hidden}</span>` : esc(f[4])}</td></tr>`; }).join('') + '</tbody></table>';
     if (e.d && e.d.length && MAP) h += dialectMap(e.d);
     if (e.c.length) h += `<h3>${TX.cites}<span class="n">${e.c.length}</span></h3><table>${th(TX.thCites)}<tbody>` +
       e.c.map(c => `<tr><td>${vtag(c[0])}</td><td class="num">${esc(c[2] ?? '')}</td><td class="num">${esc(c[3])}</td><td class="ctx">${ctx(c[4]) || `<span class="hangul">${esc(c[1])}</span>`}</td></tr>`).join('') + '</tbody></table>';
-    h += `<p class="faint" style="font-size:12px;margin-top:18px">${TX.source(e.ja.length)}<a href="https://opendict.korean.go.kr/search/searchResult?query=${encodeURIComponent(e.hw)}" rel="noopener" target="_blank">${TX.openOD}</a></p></div>`;
+    h += `<p class="faint" style="font-size:12px;margin-top:18px">${TX.source(e.ja.length)}<a href="https://opendict.korean.go.kr/search/searchResult?query=${encodeURIComponent(e.hw)}" rel="noopener" target="_blank">${TX.openOD}</a>　<a class="report" href="${reportUrl(e, forms)}" target="_blank" rel="noopener" title="${esc(TX.reportTip)}">${TX.report}</a></p></div>`;
     $('#detail').innerHTML = h;
     $('#detail').scrollTop = 0;
     $$('#detail .dleg li').forEach(li => { li.onclick = () => focusGroup(li); li.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusGroup(li); } }; });
@@ -221,7 +285,7 @@
 
   // ---------- 方言地図：우리말샘 の方言形（項目と意味の錨が同じ方言項目の形）を，地域ごとに記号で示す小さな SVG 地図
   let MAP = null;
-  const loadMap = () => (MAP ? Promise.resolve(MAP) : fetch('data/map.json').then(r => r.json()).then(m => (MAP = m)).catch(() => null));
+  const loadMap = () => (MAP ? Promise.resolve(MAP) : fetch(BASE + 'data/map.json').then(r => r.json()).then(m => (MAP = m)).catch(() => null));
   const PAL = ['#2B4C8C', '#B2452F', '#3F7A63', '#B8862B', '#7A4A8C', '#2F7F8F', '#8A5A3B', '#B4577A'];
   const SHAPES = ['circle', 'square', 'triangle', 'diamond', 'tri-down', 'hexagon', 'star', 'cross'];
   const TOP = 8;
@@ -310,7 +374,7 @@
     return [...new Set(out.filter(Boolean))].slice(0, 24);
   }
   const JA = {};
-  const jaShard = n => (JA[n] ??= fetch(`data/${LANG}/${String(n).padStart(2, '0')}.json`).then(r => r.json()).catch(() => ({})));
+  const jaShard = n => (JA[n] ??= fetch(`${BASE}data/${LANG}/${String(n).padStart(2, '0')}.json`).then(r => r.json()).catch(() => ({})));
   async function jaLookup(cands) {
     const shards = [...new Set(cands.map(c => c.codePointAt(0) % (META.tr_shards || META.ja_shards || 32)))];
     const loaded = await Promise.all(shards.map(jaShard));
@@ -372,7 +436,7 @@
     let h = '';
     if (old.rows.length) {
       h += `<div class="tr-sec">${TX.asOld(esc(old.form))}</div>` + old.rows.map(r =>
-        `<div class="tr-hit"><a href="#" class="tr-hw" data-open="${r[0]}">${esc(r[1])}</a>${r[2] ? `<span class="faint">「${r[2]}」</span>` : ''}${r[3] ? `<div class="tr-ja">${esc(r[3])}</div>` : ''}<div class="tr-ko">${esc(r[7] || '')}</div></div>`).join('');
+        `<div class="tr-hit"><a href="#" class="tr-hw" data-open="${r[0]}">${esc(r[1])}</a>${r[2] ? `<span class="faint">「${r[2]}」</span>` : ''}${r[TRI] ? `<div class="tr-ja">${esc(r[TRI])}</div>` : ''}<div class="tr-ko">${esc(r[7] || '')}</div></div>`).join('');
     }
     if (ja.length) {
       h += `<div class="tr-sec">${TX.asModern}</div>` + ja.map(([hw, pos, sn, jl, jd, ko]) =>
@@ -398,7 +462,12 @@
     search($('#q').value);
     if (current) open(current, true);
   }
-  window.addEventListener('hashchange', () => { if (!location.hash.includes('id=') || !current) fromHash(); });
+  // # が変わったら（リンクや「戻る」，報告の URL の #id= など）：検索語が変わったら引き直し，項目番号が変わったら開く
+  window.addEventListener('hashchange', () => {
+    const p = new URLSearchParams(location.hash.slice(1)), id = +p.get('id') || null;
+    if (!id || !current || (p.has('q') && p.get('q') !== $('#q').value)) fromHash();
+    else if (id !== current) open(id, true);
+  });
   $('#f').addEventListener('submit', e => { e.preventDefault(); current = null; search($('#q').value); setHash(); });
   $$('.stages input').forEach(i => i.addEventListener('change', () => search($('#q').value)));
   $('#mode').addEventListener('change', () => { try { localStorage.setItem('lexica.mode', mode()); } catch (_) { /* なし */ } search($('#q').value); });
@@ -430,8 +499,10 @@
   const top = $('.top'); const setTop = () => document.documentElement.style.setProperty('--top-h', top.offsetHeight + 'px');
   setTop(); new ResizeObserver(setTop).observe(top);
 
-  Promise.all([fetch('data/meta.json').then(r => r.json()), fetch('data/index.json').then(r => r.json()), fetch('data/jamo.json').then(r => r.json())]).then(([m, idx, jamo]) => {
+  Promise.all([fetch(BASE + 'data/meta.json').then(r => r.json()), fetch(BASE + 'data/index.json').then(r => r.json()), fetch(BASE + 'data/jamo.json').then(r => r.json()),
+    fetch(BASE + 'corrections/translations.tsv', { cache: 'no-cache' }).then(r => (r.ok ? r.text() : '')).catch(() => '')]).then(([m, idx, jamo, corr]) => {
     META = m; INDEX = idx; HKey.init(jamo);
+    loadCorrections(corr);
     $('#meta').textContent = TX.meta(m);
     fromHash();
   }).catch(() => { $('#info').textContent = TX.loadErr; });

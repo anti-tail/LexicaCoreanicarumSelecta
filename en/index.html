@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Middle Korean in English — Lexica Koreanicarum Selecta</title>
+<meta name="description" content="Search 15th–19th century Korean forms and citations from the historical data of 우리말샘, in English.">
+<link rel="preload" href="../fonts/hangul.woff" as="font" type="font/woff" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../site.css">
+<meta name="lexica-base" content="../">
+<link rel="alternate" hreflang="ja" href="../">
+<style>:root { --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <div class="mark"><span class="mark-title">Lexica Koreanicarum <span class="mark-selecta">Selecta</span></span><span class="mark-sub">Middle Korean in English</span></div>
+    <span class="top-links"><a href="../" hreflang="ja" lang="ja">日本語</a><button type="button" class="link-btn" id="theme">Dark theme</button></span>
+  </div>
+  <div class="wrap">
+    <form id="f" class="query" autocomplete="off" role="search">
+      <input id="q" class="field big" type="search" placeholder="ᄆᆞᅀᆞᆷ　마음　mozom　heart" aria-label="Word to search" autofocus>
+      <button class="btn" type="submit">Search</button>
+    </form>
+    <div class="palette" aria-label="Insert Old Hangul letters">
+      <span class="label">Letters</span>
+      <button type="button" data-ins="ㆍ" title="arae-a">ㆍ</button><button type="button" data-ins="ㅿ" title="banchieum">ㅿ</button>
+      <button type="button" data-ins="ㆁ" title="yet-ieung">ㆁ</button><button type="button" data-ins="ㅸ" title="sungyeongeum bieup">ㅸ</button>
+      <button type="button" data-ins="ㆆ" title="yeorin-hieut">ㆆ</button><button type="button" data-ins="ㅴ" title="ㅂㅅㄱ">ㅴ</button>
+      <button type="button" data-ins="ㅵ" title="ㅂㅅㄷ">ㅵ</button><button type="button" data-ins="ㅳ" title="ㅂㄷ">ㅳ</button>
+      <button type="button" data-ins="ㅄ" title="ㅂㅅ">ㅄ</button><button type="button" data-ins="ㅺ" title="ㅅㄱ">ㅺ</button>
+      <button type="button" data-ins="ㅼ" title="ㅅㄷ">ㅼ</button><button type="button" data-ins="ㅽ" title="ㅅㅂ">ㅽ</button>
+      <button type="button" data-ins="ㆅ" title="ssang-hieut">ㆅ</button><button type="button" data-ins="ㆎ" title="ㆍ+ㅣ">ㆎ</button>
+      <span class="hint">Typing ㅁ ㆍ ㅿ ㆍ ㅁ gives <span class="hangul">ᄆᆞᅀᆞᆷ</span>. Tone dots are ignored. The “<span class="hangul">한</span>” button beside the search box opens a 2-set (두벌식) keyboard.</span>
+    </div>
+    <div class="stages" role="group" aria-label="Filter by period">
+      <span class="label">Period</span>
+      <label><input type="checkbox" value="0" checked> 15th c.</label>
+      <label><input type="checkbox" value="1" checked> 16th c.</label>
+      <label><input type="checkbox" value="3" checked> 17th c.</label>
+      <label><input type="checkbox" value="4" checked> 18th c.</label>
+      <label><input type="checkbox" value="5" checked> 19th c.</label>
+      <label><input type="checkbox" value="2" checked> <span class="hangul">옛말</span> (undated)</label>
+      <span class="label sep">Matching</span>
+      <select id="mode" class="mode" aria-label="How to match forms">
+        <option value="era" selected>Allow each century’s spelling variation</option>
+        <option value="syl">Ignore syllable division only</option>
+        <option value="exact">Exact spelling</option>
+      </select>
+    </div>
+  </div>
+</header>
+<main class="wrap main">
+  <section class="pane list-pane" aria-label="Results"><div class="pane-head"><span id="info">Loading…</span></div><ul id="results" class="list"></ul></section>
+  <section class="pane detail-pane" aria-label="Entry" id="detail">
+    <div class="empty">
+      <h2>How to search</h2>
+      <ul>
+        <li>In English: <a href="#q=heart">heart</a>, <a href="#q=autumn">autumn</a>, <a href="#q=to see">to see</a></li>
+        <li>By an Old Hangul form: <a class="hangul" href="#q=ᄆᆞᅀᆞᆷ">ᄆᆞᅀᆞᆷ</a>, <a class="hangul" href="#q=ᄀᆞᅀᆞᆯ">ᄀᆞᅀᆞᆯ</a>, <a class="hangul" href="#q=ᄒᆞᆰ">ᄒᆞᆰ</a></li>
+        <li>Syllable division does not matter: <a class="hangul" href="#q=사ᄅᆞᆷ">사ᄅᆞᆷ</a> also finds <span class="hangul">사ᄅᆞᄆᆞᆯ・사ᄅᆞᆷᄆᆞᆯ</span>, and <a class="hangul" href="#q=놀애">놀애</a> finds <span class="hangul">노래</span></li>
+        <li>By the modern headword: <a class="hangul" href="#q=가을">가을</a>, <a class="hangul" href="#q=마음">마음</a></li>
+        <li>In Yale romanization: <a href="#q=mozom">mozom</a>, <a href="#q=kozol">kozol</a> (Latin letters are matched against both English and Yale)</li>
+      </ul>
+      <p class="muted">With “Allow each century’s spelling variation”, letters and spellings that had already merged in the century of a form are treated as the same: for forms from the 17th century on, ㅿ is ignored and ㅴ・ㅺ・ㄲ are not distinguished; from the 18th century on, ㆍ and ㅏ in the first syllable, and <span class="hangul">디</span> and <span class="hangul">지</span>, are not distinguished (rules after Lee &amp; Ramsey 2011, ch. 6). Untick periods to search only the forms of those centuries.</p>
+      <p class="muted">Select any Korean word on the page (including words inside citations) and press “EN” to look it up as a Middle/Early Modern form and as modern Korean in English.</p>
+      <p class="muted">Forms, citations and sources come from the historical data of <span class="hangul">우리말샘</span>; English translations from <span class="hangul">한국어기초사전</span> (both National Institute of Korean Language, CC BY-SA 2.0 KR). See <a href="LICENSE.md">LICENSE.md</a>.</p>
+    </div>
+  </section>
+</main>
+<footer class="wrap foot">
+  <span id="meta"></span>
+  <a href="https://github.com/anti-tail/LexicaCoreanicarumSelecta/blob/main/CONTRIBUTING.md#english" rel="noopener">Reporting and correcting errors</a>
+  <span>Font: subset of Noto Serif CJK KR (OFL) · Sources: <a href="https://opendict.korean.go.kr/" rel="noopener">우리말샘</a> · <a href="https://krdict.korean.go.kr/" rel="noopener">한국어기초사전</a> (National Institute of Korean Language, CC BY-SA 2.0 KR)</span>
+</footer>
+<script src="../hkey.js"></script>
+<script src="../hangulkbd.js" data-lang="en"></script>
+<script src="../site.js"></script>
+</body>
+</html>

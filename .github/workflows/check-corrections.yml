@@ -1,0 +1,14 @@
+name: 訂正の表の点検 / Check corrections
+on:
+  push:
+    paths: ["corrections/**", "tools/check_corrections.py"]
+  pull_request:
+    paths: ["corrections/**", "tools/check_corrections.py"]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/check_corrections.py corrections/translations.tsv

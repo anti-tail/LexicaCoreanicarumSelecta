@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 訂正の手順 / How corrections work
+    url: https://github.com/anti-tail/LexicaCoreanicarumSelecta/blob/main/CONTRIBUTING.md
+    about: 協力者は corrections/translations.tsv に 1 行足して直します / Collaborators fix errors by adding a line to corrections/translations.tsv
